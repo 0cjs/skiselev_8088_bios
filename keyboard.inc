@@ -5,36 +5,21 @@
 ;		- function AH=03h
 ;		- function AH=05h
 ;		- function AH=12h
-;		- see scancode.inc for other (scancode related)
+;		- see scancode.inc for other (scancode related) 请参阅scancode.inc用于其他（扫描码相关）
 ;                 INT 16h functions
-;       INT 09h - IRQ1 interrupt handler
+;       INT 09h - IRQ1 interrupt handler 中断处理程序
 ;-------------------------------------------------------------------------
 ;
 ; Compiles with NASM 2.11.08, might work with other versions
 ;
-; Copyright (C) 2010 - 2020 Sergey Kiselev.
-; Provided for hobbyist use on the Xi 8088 and Micro 8088 boards.
-;
-; This program is free software: you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation, either version 3 of the License, or
-; (at your option) any later version.
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;
 ;=========================================================================
 
 ;=========================================================================
-; Scan codes and keyboard flags
+; Scan codes and keyboard flags 扫描代码和键盘标志
 ;-------------------------------------------------------------------------
 
-; scancodes for special keys
+; scancodes for special keys 特殊按键的扫描码
 
 kbd_num_code	equ	45h
 kbd_scroll_code	equ	46h
@@ -47,7 +32,7 @@ kbd_lshift_code	equ	2ah
 kbd_ins_code	equ	52h
 kbd_del_code	equ	53h
 
-; Bits for the various modifier keys
+; Bits for the various modifier keys 各种修改键的位
 
 kbd_rshft_bit	equ	1
 kbd_lshft_bit	equ	2
@@ -59,15 +44,15 @@ kbd_caps_bit	equ	40h
 kbd_ins_bit	equ	80h
 
 ;=========================================================================
-; int_16 - BIOS keyboard functions
+; int_16 - BIOS keyboard functions BIOS键盘功能
 ;-------------------------------------------------------------------------
 	setloc	0E82Eh
 int_16:
 ;	call	int_trace		; DEBUG
 	push	bx
 	push	ds
-	mov	bx,biosdseg
-	mov	ds,bx
+	mov	bx,biosdseg	; biosdseg=0040h
+	mov	ds,bx		; ds=0040h
 	cmp	ah,.num_func
 	jae	int_16_exit
 	mov	bh,0
@@ -76,16 +61,12 @@ int_16:
     cs	jmp	near [.dispatch+bx]
 
 .dispatch:
-	dw	int_16_fn00		; read char from buffer, wait if empty
-	dw	int_16_fn01		; check buffer, do not clear
-	dw	int_16_fn02		; get shift status
-%ifdef AT_KEYBOARD
-	dw	int_16_fn03		; set delays
-%else ; AT_KEYBOARD
+	dw	int_16_fn00	; read char from buffer, wait if empty
+	dw	int_16_fn01	; check buffer, do not clear
+	dw	int_16_fn02	; get shift status
 	dw	int_16_exit		; not implemented on XT
-%endif ; AT_KEYBOARD
 	dw	int_16_exit		; keyclick
-	dw	int_16_fn05		; write to keyboard buffer
+	dw	int_16_fn05	; write to keyboard buffer
 	dw	int_16_exit		; 06
 	dw	int_16_exit		; 07
 	dw	int_16_exit		; 08
@@ -96,9 +77,9 @@ int_16:
 	dw	int_16_exit		; 0D
 	dw	int_16_exit		; 0E
 	dw	int_16_exit		; 0F
-	dw	int_16_fn10		; get enhanced keystroke
-	dw	int_16_fn11		; check enhanced keystroke
-	dw	int_16_fn12		; get enhanced shift flags
+	dw	int_16_fn10	; get enhanced keystroke
+	dw	int_16_fn11	; check enhanced keystroke
+	dw	int_16_fn12	; get enhanced shift flags
 .num_func	equ	($-.dispatch)/2
 
 int_16_exit:
@@ -113,12 +94,12 @@ int_16_exitf:
 	retf	2
 
 ;=========================================================================
-; int_16_fn02 - get shift flags
+; int_16_fn02 - get shift flags 获取移位标志
 ; Input:
 ;	AH = 02h
 ; Output:
 ;	AL - shift flags
-;            AL bits:
+;           	AL bits:
 ;		7 - Insert active
 ;		6 - Caps Lock active
 ;		5 - Num Lock active
@@ -132,67 +113,14 @@ int_16_fn02:
 	mov	al,byte [kbd_flags_1]
 	jmp	int_16_exit
 
-%ifdef AT_KEYBOARD
-
 ;=========================================================================
-; int_16_fn03 - set keyboard typematic rate
-; Input:
-;	AH = 03
-;	AL - subfunction
-;	     00 - set typematic rate to default
-;	     01 - increase initial delay
-;	     02 - slow typematic rate by 1/2
-;	     04 - turn off typematic chars
-;	     05 - set typematic rate/delay
-;	BH - repeat delay (AL=5)
-;		0 - 250ms	2 - 750ms
-;		1 - 500ms	3 - 1000ms
-;	BL - typematic rate, one of the following  (AL=5)
-;		00 - 30.0	01 - 26.7	02 - 24.0	03 - 21.8
-;		04 - 20.0	05 - 18.5	06 - 17.1	07 - 16.0
-;		08 - 15.0	09 - 13.3	0A - 12.0	0B - 10.9
-;		0C - 10.0	0D - 9.2	0E - 8.6	0F - 8.0
-;		10 - 7.5	11 - 6.7	12 - 6.0	13 - 5.5
-;		14 - 5.0	15 - 4.6	16 - 4.3	17 - 4.0
-;		18 - 3.7	19 - 3.3	1A - 3.0	1B - 2.7
-;		1C - 2.5	1D - 2.3	1E - 2.1	1F - 2.0
-; Output:
-;	none
-;-------------------------------------------------------------------------
-int_16_fn03:
-	cmp	al,05
-	jne	.exit			; only AL = 5 implemented
-	push	bx
-	push	cx
-	mov	al,kbc_cmd_kbd_dis	; disable keyboard interface
-	call	kbc_write_command
-	and	bh,3			; legal BH values from 0 to 3
-	mov	cl,5
-	shl	bh,cl
-	and	bl,1Fh			; legal BL values from 0 to 1F
-	mov	al,dev_cmd_rate
-	call	kbc_kb_send
-	mov	al,bh
-	call	kbc_kb_send
-	mov	al,kbc_cmd_kbd_ena	; enable keyboard interface
-	call	kbc_write_command
-	mov	al,04h			; FIXME: Use dev_cmd_enable instead?
-	call	kbc_kb_send
-	pop	cx
-	pop	bx
-.exit:
-	jmp	int_16_exit
-
-%endif ; AT_KEYBOARD
-
-;=========================================================================
-; int_16_fn05 - store keystroke in keyboard buffer
+; int_16_fn05 - store keystroke in keyboard buffer 在键盘缓冲区中存储击键
 ; Input:
 ;	AH = 05h
 ;	CH = BIOS scan code
 ;	CL = ACII character
 ; Output:
-;	AL - status
+;	AL - status 状态
 ;	     00h - success
 ;	     01h - keyboard buffer full
 ;-------------------------------------------------------------------------
@@ -208,7 +136,7 @@ int_16_fn05:
 	mov	bx,word [kbd_buffer_start]
 .1:
 	cmp	bx,word [kbd_buffer_head]
-	je	.no_space		; no space in buffer
+	je	.no_space			; no space in buffer
 	mov	word [si],cx
 	mov	word [kbd_buffer_tail],bx
 	mov	al,0			; stored successfully
@@ -218,11 +146,11 @@ int_16_fn05:
 	jmp	int_16_exit
 
 ;=========================================================================
-; int_16_fn12 - get extended shift flags
+; int_16_fn12 - get extended shift flags 获取扩展移位标志
 ; Input:
 ;	AH = 12h
 ; Output:
-;	AL - shift flags 1 (same as returned by function AH=02)
+;	AL - shift flags 1 (same as returned by function AH=02) 移位标志1（与函数AH=02返回的相同）
 ;	AH - shift flags 2
 ;            AH bits:
 ;		7 - SysRq key pressed
@@ -249,7 +177,7 @@ int_16_fn12:
 	jmp	int_16_exit
 
 ;=========================================================================
-; int_09 - Keyboard hardware interrupt (IRQ1) handler
+; int_09 - Keyboard hardware interrupt (IRQ1) handler 键盘硬件中断（IRQ1）处理程序
 ;-------------------------------------------------------------------------
 	setloc	0E987h			; INT 09 Entry Point
 int_09:
@@ -257,66 +185,74 @@ int_09:
 	push	bx
 	push	ds
 
-	mov	ax,biosdseg
-	mov	ds,ax
+	mov	ax,biosdseg		; =0040h
+	mov	ds,ax			; ds=0040h
+	in	al,ppi_pa_reg		; get keyboard data / scancode	从60h端口获取键盘数据/扫描码
 
-%ifdef AT_KEYBOARD
-%ifndef DISABLE_KBD_DURING_INTERRUPTS
-	mov	al,kbc_cmd_kbd_dis	; disable keyboard interface
-	call    kbc_write_command
-%endif
-%endif ; AT_KEYBOARD
-	in	al,ppi_pa_reg		; get keyboard data / scancode
-	mov	ah,al			; save it in AH
-	in	al,ppi_pb_reg		; read PPI port B, control
-	or	al,10000000b		; set keyboard clear bit
-	out	ppi_pb_reg,al		; write it back to PPI port B
-	and	al,01111111b		; unset keyboard clear bit
-	out	ppi_pb_reg,al		; write it back to PPI port B
-	mov	al,ah			; restore AL / scancode
-	sti
-%ifdef AT_KEYBOARD
-	mov	ah,4Fh
-	stc
-	int	15h			; keyboard intercept
-	jnc	keyboard_int_exit	; CF = 0, ignore scan code
-%else ; AT_KEYBOARD
-	cmp	al,0FFh			; check for overrun
-	jz	keyboard_int_exit
-%endif ; AT_KEYBOARD
-; check for KBC response codes
+;	mov	ah,al			; save it in AH
+;	in	al,ppi_pb_reg		; read PPI port B, control	获取61h端口数据
+;	or	al,10000000b		; set keyboard clear bit	将61h数据最高位置1
+;	out	ppi_pb_reg,al		; write it back to PPI port B	写回61h
+;	and	al,01111111b		; unset keyboard clear bit
+;	out	ppi_pb_reg,al		; write it back to PPI port B
+;	mov	al,ah			; restore AL / scancode
 
-	cmp	al,0EEh			; echo response?
-	je      keyboard_int_exit
-	cmp	al,0FAh			; acknowledge?
-	jne     .2
+	sti				; 开中断
+
+	cmp	al,0FFh			; check for overrun 检查是否超限
+	jz	keyboard_int_exit		; 相等(ZF=1)则转移
+
+	cmp	al,0FDh			; 自定WIN键，开启扬声器
+	jne	.outmy1			; 
+;	MOV        AH,AL
+;	MOV	AL,1
+;	OUT	ppi_pb_reg,AL
+;	MOV	AL,AH
+.outmy1
+	cmp	al,052h			; 自定--键，关闭扬声器
+	jne	.outmy2			; 
+;	MOV        AH,AL
+;	MOV	AL,0
+;	OUT	ppi_pb_reg,AL
+;	MOV	AL,AH
+.outmy2
+
+; check for KBC response codes 检查KBC响应代码
+
+	cmp	al,0EEh			; echo response? 回声响应？
+	je      keyboard_int_exit		; je和jz一模一样，所以相等(ZF=1)则转移
+	cmp	al,0FAh			; acknowledge? 应答？
+	jne     .2				; 不相等(ZF=0)转移，如果转移则说明是 非应答
 	or	byte [kbd_flags_4],10h	; set ack bit
 	jmp	keyboard_int_exit
 .2:
-	cmp	al,0FEh			; resend command?
-	jne	.3
+	cmp	al,0FEh			; resend command? 重发命令？
+	jne	.3			; 不相等转移，如果转移说明是 非重发命令
 	or	byte [kbd_flags_4],20h	; set resend bit
 	jmp	keyboard_int_exit
 
 ; Note: other KBC response codes have their MSB bit set and will be ignored
+; 其他KBC响应代码已设置MSB位，将被忽略
 
 .3:
 
 ; check for 0E0h and 0E1h scancodes, set flags in kbd_flags_3
+; 检查0E0h和0E1h扫描码，在kbd_flags_3中设置标志
 
 	cmp	al,0E0h
-	jne	.4
+	jne	.4			; 
 	or	byte [kbd_flags_3],10b	; set E0 flag
 	and	byte [kbd_flags_3],0FEh	; clear E1 flag
 	jmp	keyboard_int_exit
 .4:
 	cmp	al,0E1h
 	jne	.5
-	or	byte [kbd_flags_3],1	; set E1 flag
+	or	byte [kbd_flags_3],1		; set E1 flag
 	and	byte [kbd_flags_3],0FDh	; clear E0 Flag
 	jmp	keyboard_int_exit
 
 ; check for various <Ctrl>+<Alt>+<Key> combinations:
+; 检查各种<Ctrl>+<Alt>+<Key>组合：
 
 .5:
 	mov	bl,byte [kbd_flags_1]
@@ -328,9 +264,10 @@ int_09:
 	mov	word [warm_boot],1234h ; warm boot flag
 	jmp	0F000h:warm_start	; reboot
 
-; handle turbo mode switch combinations
-.check_turbo_off:
 
+; handle turbo mode switch combinations 
+; 处理turbo模式开关组合
+.check_turbo_off:
 %ifdef TURBO_MODE
 	cmp	al,4Ah			; gray - scancode
 	jne	.check_turbo_mid
@@ -339,112 +276,101 @@ int_09:
 	jmp	keyboard_int_exit
 
 .check_turbo_mid:
-%ifdef MACHINE_FE2010A
-	cmp	al,37h			; * scancode
-	jne	.check_turbo_hi
-
-	call	set_cpu_clk_7_16mhz
-	jmp	keyboard_int_exit
-%endif ; MACHINE_FE2010A
 
 .check_turbo_hi:
 	cmp	al,4Eh			; gray + scancode
 	jne	.6
 
-%ifdef MACHINE_FE2010A
-	call	set_cpu_clk_9_55mhz
-%else ; MACHINE_FE2010A
 	call	set_cpu_clk_turbo
-%endif ; MACHINE_FE2010A
 	jmp	keyboard_int_exit
 
 %endif ; TURBO_MODE
 
-; Check for the INS key here. This one needs to toggle the ins bit
-; in the keyboard flags variables.
+; Check for the INS key here. This one needs to toggle the ins bit in the keyboard flags variables.
+; 在这里检查INS键。这需要切换键盘标志变量中的ins位。
 
 .6:
 	cmp	al,kbd_ins_code
-	jne	.7
-	or	byte [kbd_flags_2],kbd_ins_bit ; set INS bit
-	jmp	.translate	   	; pass on INS key
-
+	jne	.7			; 比较是否为ins键，若不是则转移(jne:不相等转移)
+	or	byte [kbd_flags_2],kbd_ins_bit	 ; set INS bit
+	jmp	.translate	   		; pass on INS key
+	
 .7:
-	cmp	al,kbd_ins_code+80h	; INS "break" scan code
+	cmp	al,kbd_ins_code+80h		; INS "break" scan code
 	jne     .8
 	and	byte [kbd_flags_2],~kbd_ins_bit ; clear INS bit
-	xor     byte [kbd_flags_1],kbd_ins_bit ; toggle INS bit
+	xor     byte [kbd_flags_1],kbd_ins_bit 	; toggle INS bit
 	jmp     .no_buffer
 
-; handle the left and right Shift keys
+; handle the left and right Shift keys 处理左右Shift键
 
 .8:
 	cmp	al,kbd_lshift_code
 	jne	.9
-	or	byte [kbd_flags_1],kbd_lshft_bit ; set left Shift bit
+	or	byte [kbd_flags_1],kbd_lshft_bit 	; set left Shift bit
 	jmp	.no_buffer
 .9:
-	cmp	al,kbd_lshift_code+80h
+	cmp	al,kbd_lshift_code+80h 	;kbd_lshift_code+80h
 	jne     .10
-	and     byte [kbd_flags_1],~kbd_lshft_bit ; clear left Shift bit
+	and     byte [kbd_flags_1],~kbd_lshft_bit		; clear left Shift bit
 	jmp     .no_buffer
 .10:
 	cmp	al,kbd_rshift_code
 	jne	.11
-	or	byte [kbd_flags_1],kbd_rshft_bit ; set right Shift bit
+	or	byte [kbd_flags_1],kbd_rshft_bit		; set right Shift bit
 	jmp	.no_buffer
 .11:
 	cmp	al,kbd_rshift_code+80h
 	jne     .12
-	and	byte [kbd_flags_1],~kbd_rshft_bit ; clear right Shift bit
+	and	byte [kbd_flags_1],~kbd_rshft_bit	; clear right Shift bit
 	jmp	.no_buffer
 
-; handle the Alt key
+; handle the Alt key 处理Alt键
 
 .12:
 	cmp	al,kbd_alt_code
 	jne	.13
-	or	byte [kbd_flags_1],kbd_alt_bit ; set Alt bit
+	or	byte [kbd_flags_1],kbd_alt_bit 		; set Alt bit
 	jmp	.no_buffer
 .13:
 	cmp	al,kbd_alt_code+80h
 	jne	.14
-	and	byte [kbd_flags_1],~kbd_alt_bit ; clear Alt bit
+	and	byte [kbd_flags_1],~kbd_alt_bit 		; clear Alt bit
 	cmp	byte [kbd_alt_keypad],0		; anything in Alt + Keypad area
 	je	.no_buffer				; nothing there - exit
-	mov	al,byte [kbd_alt_keypad]	; put it in the buffer
+	mov	al,byte [kbd_alt_keypad]		; put it in the buffer
 	mov	byte [kbd_alt_keypad],0		; zero the buffer
 	mov	ah,0
 	jmp	.put_in_buffer
 
-; handle the Ctrl key
+; handle the Ctrl key 处理Ctrl键
 
 .14:
 	cmp	al,kbd_ctrl_code
 	jne	.15
-	or	byte [kbd_flags_1],kbd_ctrl_bit ; set Ctrl bit
+	or	byte [kbd_flags_1],kbd_ctrl_bit		 ; set Ctrl bit
 	jmp	.no_buffer
 .15:
 	cmp	al,kbd_ctrl_code+80h
 	jne	.16
-	and	byte [kbd_flags_1],~kbd_ctrl_bit ; clear Ctrl bit
+	and	byte [kbd_flags_1],~kbd_ctrl_bit 	; clear Ctrl bit
 	jmp	.no_buffer
 
-; handle the Caps Lock key
+; handle the Caps Lock key 处理Caps Lock键
 
 .16:
 	cmp	al,kbd_caps_code
 	jne	.17
-	or	byte [kbd_flags_2],kbd_caps_bit ; set Caps Lock bit
-	xor	byte [kbd_flags_1],kbd_caps_bit ; toggle Caps Lock bit
+	or	byte [kbd_flags_2],kbd_caps_bit		; set Caps Lock bit
+	xor	byte [kbd_flags_1],kbd_caps_bit 	; toggle Caps Lock bit
 	jmp	.no_buffer
 .17:
 	cmp	al,kbd_caps_code+80h
 	jne	.18
-	and	byte [kbd_flags_2],~kbd_caps_bit ; clear Caps Lock bit
+	and	byte [kbd_flags_2],~kbd_caps_bit 	; clear Caps Lock bit
 	jmp	set_LEDs
 
-; check if print screen key was pressed
+; check if print screen key was pressed 检查是否按下了打印屏幕键
 
 .18:
 	cmp	al,kbd_prtsc_code
@@ -454,6 +380,7 @@ int_09:
 	jmp	print_screen
 
 ; handle the Scroll Lock (046h) key and Ctrl-Break combination (0E0h, 046h)
+; 操作Scroll Lock（046h）键和Ctrl-Break组合键（0E0h，046h
 
 .test_scroll_loc:
 	cmp	al,kbd_scroll_code
@@ -499,6 +426,7 @@ int_09:
 	jmp	set_LEDs
 
 ; translate keyboard scan code to ASCII and BIOS scan code
+; 将键盘扫描代码转换为ASCII和BIOS扫描代码
 
 .translate:
 	test	byte [kbd_flags_2],08h	; check pause flag
@@ -523,7 +451,7 @@ int_09:
 	mov	bx,word [kbd_buffer_start]
 .1:
 	cmp	bx,word [kbd_buffer_head]
-	je	.no_space		; no space in buffer
+	je	.no_space			; no space in buffer
 	mov	word [si],ax
 	mov	word [kbd_buffer_tail],bx
 
@@ -531,15 +459,9 @@ int_09:
 	pop	si
 
 .no_buffer:
-	and     byte [kbd_flags_3],0FCh	; E0, E1 not last code
+	and     byte [kbd_flags_3],0FCh		; E0, E1 not last code
 
 keyboard_int_exit:
-%ifdef AT_KEYBOARD
-%ifndef DISABLE_KBD_DURING_INTERRUPTS
-	mov	al,kbc_cmd_kbd_ena	; enable keyboard interface
-	call	kbc_write_command
-%endif
-%endif ; AT_KEYBOARD
 	mov	al,20h			; send EOI (end of interrupt)
 	out	pic1_reg0,al		; to the 8259A PIC.
 
@@ -584,26 +506,7 @@ set_LEDs:
 	and	al,111b
 	and	byte [kbd_flags_4],0F8h	; clear LED bits.
 	or	byte [kbd_flags_4],al	; mask in new bits.
-%ifdef AT_KEYBOARD
-%ifndef DISABLE_KBD_DURING_INTERRUPTS
-	mov	al,kbc_cmd_kbd_ena	; enable keyboard interface
-	call	kbc_write_command
-%endif
-	mov	ah,al			; save LED bits
 
-	mov	al,kbc_cmd_kbd_dis	; disable keyboard interface
-	call	kbc_write_command
-
-	mov	al,kbd_cmd_leds		; set LEDs command
-	call	kbc_kb_send		; send the command to the keyboard
-	mov	al,ah			; get parameter byte
-	call	kbc_kb_send		; send parameter to the keyboard
-
-	mov	al,kbc_cmd_kbd_ena	; enable keyboard interface
-	call	kbc_write_command
-	mov	al,dev_cmd_enable	; restart keyboard scanning
-	call	kbc_kb_send
-%endif ; AT_KEYBOARD
 	jmp	keyboard_int_exit1
 
 ;=========================================================================

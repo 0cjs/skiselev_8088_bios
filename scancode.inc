@@ -1,6 +1,6 @@
 ;=========================================================================
-; scancode.inc - Keyboard scancode to ASCII code conversion
-;		 and related INT 16h functions:
+; scancode.inc - Keyboard scancode to ASCII code conversion and related INT 16h functions:
+; 键盘扫描码到ASCII码的转换和相关INT 16h功能
 ;	INT 16h - BIOS Keyboard Services
 ;		- function AH=00h
 ;		- function AH=01h
@@ -10,36 +10,23 @@
 ;
 ; Compiles with NASM 2.11.08, might work with other versions
 ;
-; Copyright (C) 2010 - 2020 Sergey Kiselev.
-; Provided for hobbyist use on the Xi 8088 and Micro 8088 boards.
-;
-; This program is free software: you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation, either version 3 of the License, or
-; (at your option) any later version.
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-;
 ;=========================================================================
 
 ;=========================================================================
-; scan_xlat_table - Keyboard scan code to ASCII and
-;                   BIOS scan code translation table
-; Note 1: Table starts with scancode == 1
-; Note 2: The high byte of the 'Normal' field indicates key flags
+; scan_xlat_table - Keyboard scan code to ASCII and BIOS scan code translation table
+; 	            键盘扫描代码到ASCII和BIOS扫描代码转换表
+; Note 1: Table starts with scancode == 1 表格以scancode==1开头
+; Note 2: The high byte of the 'Normal' field indicates key flags “Normal”字段的高位字节表示按键标志
 ;	00 - no flags
 ;	1x - keypad numeric keys, can be used with Alt to enter ASCII codes
-;	     x in this case equals digit value
+;	       键盘数字键，可与Alt一起使用以输入ASCII码
+;	     x in this case equals digit value 在这种情况下等于数字值
 ;	20 - key is affected by Caps Log or Num Lock (reverses Shift operation)
-;	40 - there is an extended key, so check for 0E0h flag
+;	       键受Caps Log或Num Lock的影响（反转Shift操作）
+;	40 - there is an extended key, so check for 0E0h flag 有一个扩展按键，因此请检查0E0h标志
 ;	8x - F11, F12 BIOS scan codes
 ;	     (observation: for all other keys BIOS scan code == kbd scan code)
+;	   （观察：对于所有其他键，BIOS扫描代码==kbd扫描代码）
 ;-------------------------------------------------------------------------
 
 scan_xlat_table:
@@ -87,13 +74,13 @@ scan_xlat_table:
 	dw	003Bh,	273Ah,	0,	27F0h	; ;	:	27h
 	dw	0027h,	2822h,	0,	28F0h	; '	"	28h
 	dw	0060h,	297Eh,	0,	29F0h	; `	~	29h
-	dw	0,	0,	0,	0	; Left Shift	2Ah
+	dw	0,	0,	0,	0	; Left Shift		2Ah
 	dw	005Ch,	2B7Ch,	2B1Ch,	2BF0h	; \	|	2Bh
 	dw	207Ah,	2C5Ah,	2C1Ah,	2C00h	; z	Z	2Ch
 	dw	2078h,	2D58h,	2D18h,	2D00h	; x	X	2Dh
 	dw	2063h,	2E43h,	2E03h,	2E00h	; c	C	2Eh
-	dw	2076h,	2F56h,	2F16h,	2F00h	; v	V	2Fh
-	dw	2062h,	3042h,	3002h,	3000h	; b	B	30h
+	dw	2076h,	2F56h,	2F06h,	2F00h	; v	V	2Fh
+	dw	2062h,	3042h,	3006h,	3000h	; b	B	30h
 ;		Normal	Shift	Ctrl	Alt	Key	KeySh	Scan
 	dw	206Eh,	314Eh,	310Eh,	3100h	; n	N	31h
 	dw	206Dh,	324Dh,	320Dh,	3200h	; m	M	32h
@@ -121,11 +108,11 @@ scan_xlat_table:
 	dw	7700h,	4737h,	7700h,	9700h	; Home	7	47h
 	dw	7800h,	4838h,	8D00h,	9800h	; Up 	8	48h
 	dw	7900h,	4939h,	8400h,	9900h	; PgUp	9	49h
-	dw	002Dh,	4A2Dh,	8E00h,	4AF0h	; Gray -	4Ah
+	dw	002Dh,	4A2Dh,	8E00h,	4AF0h	; Gray -		4Ah
 	dw	7400h,	4B34h,	7300h,	9B00h	; Left	4	4Bh
-	dw	75F0h,	4C35h,	8F00h,	4CF0h	; Center5	4Ch
+	dw	75F0h,	4C35h,	8F00h,	4CF0h	; Center5		4Ch
 	dw	7600h,	4D36h,	7400h,	9D00h	; Right	6 	4Dh
-	dw	002Bh,	4E2Bh,	0,	4EF0h	; Gray +	4Eh
+	dw	002Bh,	4E2Bh,	0,	4EF0h	; Gray +		4Eh
 	dw	7100h,	4F31h,	7500h,	9F00h	; End	1	4Fh
 	dw	7200h,	5032h,	9100h,	0A000h	; Down	2	50h
 ;		Normal	Shift	Ctrl	Alt	Key		Scan

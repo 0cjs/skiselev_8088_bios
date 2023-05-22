@@ -1,24 +1,9 @@
 ;=========================================================================
 ; errno.inc - POST checkpoint codes (sent to port 80h during POST)
+; 错误编号： POST检查点代码（POST期间发送到端口80h）
 ;-------------------------------------------------------------------------
 ;
 ; Compiles with NASM 2.11.08, might work with other versions
-;
-; Copyright (C) 2010 - 2020 Sergey Kiselev.
-; Provided for hobbyist use on the Xi 8088 and Micro 8088 boards.
-;
-; This program is free software: you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation, either version 3 of the License, or
-; (at your option) any later version.
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;
 ;=========================================================================
 
@@ -61,9 +46,9 @@ e_kbd_bat_fail	equ	70h		; Keyboard BAT test failed
 e_kbd_dis_fail	equ	71h		; Keyboard disable command failed
 e_kbd_ena_fail	equ	72h		; Keyboard enable command failed
 ;-------------------------------------------------------------------------
-; Minor numbers for keyboard errors
+; Minor numbers for keyboard errors 键盘错误的次要数字
 e_kbd_tout_fail	equ	01h		; Keyboard timeout sending command
-e_kbd_resp_fail	equ	02h		; Keyboard no response
+e_kbd_resp_fail	equ	02h		; Keyboard no response 键盘无响应
 e_kbd_nack_fail	equ	03h		; Acknowledge response was expected
 					; but keyboard have sent something else
 e_kbd_rsp2_fail	equ	04h		; Keyboard no response byte 2 for BAT

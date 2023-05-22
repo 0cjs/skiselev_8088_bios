@@ -2,24 +2,6 @@
 ; sound.inc - Play power-on sound. This also tests PIT and PORT B functionality
 ;-------------------------------------------------------------------------
 ;
-; Compiles with NASM 2.11.08, might work with other versions
-;
-; Copyright (C) 2010 - 2019 Sergey Kiselev.
-; Provided for hobbyist use on the Xi 8088 and Micro 8088 boards.
-;
-; This program is free software: you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation, either version 3 of the License, or
-; (at your option) any later version.
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-;
 ;=========================================================================
 
 notes	dw	pic_freq/554		; D flat
@@ -39,7 +21,7 @@ notes	dw	pic_freq/554		; D flat
 ;-------------------------------------------------------------------------
 sound:
 	cld
-	mov	si,notes		; set SI to notes table
+	mov	si,notes			; set SI to notes table
 
 	mov	al,0B6h			; set PIC channel 2 to mode 3
 	out	pit_ctl_reg,al
@@ -53,22 +35,22 @@ sound:
 	mov	al,ah
 	out	pit_ch2_reg,al		; load divisor's high byte to PIC
 
-	in	al,ppi_pb_reg		; read current value of PORT B
-        or      al,03h			; turn on the speaker
-        out     ppi_pb_reg,al		; write the new value
+;	in	al,ppi_pb_reg		; read current value of PORT B 读取端口已删除
+        	mov         al,03h			; turn on the speaker 直接D1=1打开扬声器，其他位无意义
+        	out    	ppi_pb_reg,al		; write the new value
 
 .silent:
 	mov	cx,3000h
 	call	delay_15us		; delay while note is playing
 
-	in	al,ppi_pb_reg		; read current value of PORT B
-	and	al,0FCh			; turn off the speaker
-        out     ppi_pb_reg,al		; write the new value
+;	in	al,ppi_pb_reg		; read current value of PORT B 读取端口已删除，无需读取
+	mov	al,00h			; turn off the speaker 直接赋值0，关闭扬声器
+        	out     	ppi_pb_reg,al		; write the new value
 
-        mov     cx,0100h
+        	mov    	 cx,0100h
 	call	delay_15us		; delay after the note
         
-        jmp     .loop			; play the next note
+        	jmp     .loop			; play the next note
 .exit:
 	ret
 
@@ -83,19 +65,23 @@ beep:
 	push	ax
 	mov	al,0B6h			; set PIC channel 2 to mode 3
 	out	pit_ctl_reg,al
-	mov	ax,1193			; approximately 1000 Hz
+	mov	ax,pic_freq/700			; approximately 200 Hz
 	out	pit_ch2_reg,al		; load divisor's low byte to PIC
 	mov	al,ah
 	out	pit_ch2_reg,al		; load divisor's high byte to PIC
-	in	al,ppi_pb_reg		; read current value of PORT B
-	or	al,03h			; turn on the speaker
+;	in	al,ppi_pb_reg		; read current value of PORT B 读取端口已删除，无需读取
+	MOV	al,03h			; turn on the speaker  直接赋值D0=1，因为其他位已删除
 	out	ppi_pb_reg,al		; write the new value
 .loop:
 	mov	cx,6666			; 0.1 second delay
 	call	delay_15us
+	call	delay_15us
 	dec	bl
 	jnz	.loop
-	xor	al,03h			; turn off the speaker
+	mov	al,0			; turn off the speaker
 	out	ppi_pb_reg,al		; write the new value
 	pop	ax
 	ret
+
+
+

@@ -51,7 +51,7 @@ detect_cpu:
 	push	ds
 	xor	ax,ax
 	mov	ds,ax			; interrupt table segment
-	mov	ax,.int_01		; new int 01h offset
+	mov	ax,.int_01			; new int 01h offset
 	xchg	ax,word [4]		; switch with original int 1 offset
 	push	ax			; save to stack
 	mov	ax,cs			; new int 01h segment
@@ -60,7 +60,7 @@ detect_cpu:
 	pushf				; push flags to stack (save)
 	pushf				; push flags to stack (modify)
 	pop	ax			; and move them to AX
-	or	ax,flags_tf		; set TF
+	or	ax,flags_tf			; set TF
 	push	ax
 	xor	ax,ax			; AX = 0
 	popf				; load modified value to FLAGS register
@@ -71,18 +71,18 @@ detect_cpu:
 .push_sreg:				; and will not single-step to here
 	pop	ds			; 1981 and newer 8088 disable interrupts
 					; after modifying segment registers
-.pop_sreg:				; and will not single-step to here
+.pop_sreg:					; and will not single-step to here
 	nop
 	popf				; restore original FLAGS, disable
 					; single-step
 
 	pop	si			; get original int 01h segment
-	mov	word [6],si		; save it to interrupt table
+	mov	word [6],si			; save it to interrupt table
 	pop	si			; get original int 01h offset
-	mov	word [4],si		; save it to interrupt table
-	pop	ds
+	mov	word [4],si			; save it to interrupt table
+	pop	ds	
 	sti				; enable interrupts
-	cmp	ax,0001h		; if AX = 0001h - we have INTEL (C) 1978
+	cmp	ax,0001h			; if AX = 0001h - we have INTEL (C) 1978
 	jz	.i8088_78
 
 	cmp	ax,0002h
@@ -214,14 +214,7 @@ print_cpu_clk:
 	push	ax
 	push	si
 	and	al,nvram_trbo_mask	; get turbo bits
-%ifdef MACHINE_FE2010A
-	mov	si,msg_clk_7_16mhz
-	cmp	al,1
-	je	.print
-	mov	si,msg_clk_9_55mhz
-	cmp	al,2
-	je	.print
-%endif ; MACHINE_FE2010A
+
 %ifdef MACHINE_XI8088
 	mov	si,msg_clk_turbo
 	cmp	al,1
@@ -246,13 +239,7 @@ print_cpu_clk:
 ;	none
 ;-------------------------------------------------------------------------
 set_cpu_clk:
-%ifdef MACHINE_FE2010A
-	cmp	al, 1 
-	je	set_cpu_clk_7_16mhz
-	cmp	al, 2
-	je	set_cpu_clk_9_55mhz
-	jmp	set_cpu_clk_4_77mhz   
-%endif ; MACHINE_FE2010A
+
 %ifdef MACHINE_XI8088
 	cmp	al,1
 	je	set_cpu_clk_turbo
@@ -270,36 +257,7 @@ set_cpu_clk:
 ; Output:
 ;	none
 ;-------------------------------------------------------------------------
-%ifdef MACHINE_FE2010A
-set_cpu_clk_4_77mhz:
-	push ax
-	mov	al,byte [equipment_list] ; get lower byte of the equipment list
-	and	al,equip_fpu		; isolate FPU installed bit
-	or	al,fe_par_disable	; disable memory parity checking
-	out	fe_config_reg,al	; clear bits 7-5 - 4.77 MHz CPU clock
-	pop ax
-	ret
 
-set_cpu_clk_7_16mhz:
-	push ax
-	mov	al,byte [equipment_list] ; get lower byte of the equipment list
-	and	al,equip_fpu		; isolate FPU installed bit
-	or	al,fe_par_disable	; disable memory parity checking
-	or	al,fe_clk_7_16mhz	; set bit 6 - 7.16 MHz CPU clock
-	out	fe_config_reg,al
-	pop ax
-	ret
-
-set_cpu_clk_9_55mhz:
-	push ax
-	mov	al,byte [equipment_list] ; get lower byte of the equipment list
-	and	al,equip_fpu		; isolate FPU installed bit
-	or	al,fe_par_disable	; disable memory parity checking
-	or	al,fe_clk_9_55mhz	; set bit 7 - 9.55 MHz CPU clock
-	out	fe_config_reg,al
-	pop ax
-	ret
-%endif ; MACHINE_FE2010A
 %ifdef MACHINE_XI8088
 set_cpu_clk_4_77mhz:
 	push	ax

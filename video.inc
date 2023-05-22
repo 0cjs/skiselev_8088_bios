@@ -3,23 +3,6 @@
 ;       INT 10h, functions AH=00h to AH=0Fh
 ;-------------------------------------------------------------------------
 ;
-; Compiles with NASM 2.11.08, might work with other versions
-;
-; This code is adopted from XT-clone BIOS by Anonymous
-;
-; This program is free software: you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation, either version 3 of the License, or
-; (at your option) any later version.
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-;
 ;=========================================================================
 
 ;-------------------------------------------------------------------------
@@ -95,7 +78,7 @@ int_10_dx	equ	int_10_cx+2
 ;			BH = 01h - Set palette
 ;		0Ch - Write graphics pixel
 ;		0Dh - Read graphics pixel
-;		0Eh - Teletype output
+;		0Eh - Teletype output 电传打字输出
 ;		0Fh - Get current video mode
 ;-------------------------------------------------------------------------
 	setloc	0F065h			; int 10 Entry Point
@@ -115,14 +98,14 @@ int_10:
 	mov	ds,bx
 	mov	bl,byte [video_mode]
 	cmp	bl,07h			; check for monochrome mode
-	mov	bx,0B800h		; assume CGA, BX = CGA video segment
+	mov	bx,0B800h			; assume CGA, BX = CGA video segment
 	jb	.color			; it is CGA
 	mov	bh,0B0h			; else MDA, BX = MDA video segment
 
 .color:
 	mov	es,bx			; load video segment to ES
 	mov	bp,sp			;  ...start of stack frame
-	cmp	ah,int_10_num_func	; dispatch table size
+	cmp	ah,int_10_num_func		; dispatch table size
 	jae	.exit			; invalid function
 	mov	bh,0
 	mov	bl,ah
@@ -198,65 +181,65 @@ TABMUL	db	00h,00h,10h,10h,20h,20h,20h,30h ; Table lookup for multiply
 int_10_fn00:
 	mov	bl,byte [bp+int_10_al]	; BL = video mode
 					; assume CGA mode
-	mov	cx,0B800h		; CGA video memory segment
+	mov	cx,0B800h			; CGA video memory segment
 	mov	dx,3D4h			; port for MC6845 CRTC address register
 	mov	al,0
 	cmp	bl,07h
 	jb	.color			; jump if CGA/color mode
 					; set MDA mode
 	mov	ch,0B0h			; MDA video memory segment
-	mov	dl,0B4h 		; port for MC6845 CRTC address register
+	mov	dl,0B4h 			; port for MC6845 CRTC address register
 	inc	al
 
 .color:
 	mov	es,cx			; ES = video memory segment
-	mov	word [video_port],dx	; Save current CRTC display port
+	mov	word [video_port],dx		; Save current CRTC display port
 	add	dl,4
 	out	dx,al			; Reset the video
-	mov	byte [video_mode],bl	; Save current CRTC mode
+	mov	byte [video_mode],bl		; Save current CRTC mode
 	mov	bh,0
 	push	bx
 	push	es
 	xor	ax,ax
 	mov	es,ax			; Load interrupt table segment to ES
-    es	les	si,[1Dh*4]		; Load video parameters table
+    es	les	si,[1Dh*4]			; Load video parameters table
 					; (INT 1Dh vector) to ES:SI
     cs	mov	bl,byte [bx+TABMUL]	; Get BL for indexing into int_1D
 	add	si,bx
 
-    es	mov	cx,word [si+crtc_cur_start] ; cursor shape from INT 1Dh table
+    es	mov	cx,word [si+crtc_cur_start] 	; cursor shape from INT 1Dh table
 	xchg	cl,ch			; convert to LSB format
-	mov	word [video_cur_shape],cx ; store cursor shape
+	mov	word [video_cur_shape],cx 	; store cursor shape
 
 	mov	cx,10h			; Sixteen values to send
 
 .setup_crt_loop:
-    es	mov	al,byte [si]		; Value to send in SI
+    es	mov	al,byte [si]			; Value to send in SI
 	call	vid_crtc_writeb			;  ...send it
 	inc	ah			;  ...bump count
 	inc	si			;  ...point to next
 	loop	.setup_crt_loop		;  ...loop until done
 	pop	es
 	xor	di,di
-	mov	cx,2000h		; video memory size for CGA
+	mov	cx,2000h			; video memory size for CGA
 	xor	ax,ax			; fill word for graphics mode
 	call	vid_check_mode		; Set flags according to mode
 	jc	.clear_screen		; jump if graphics mode
-	jnz	.text_fill		; jump if CGA mode
-	mov	cx,0800h 		; video memory size for MDA
+	jnz	.text_fill			; jump if CGA mode
+	mov	cx,0800h 			; video memory size for MDA
 
 .text_fill:
-	mov	ax,07h << 8 | ' '	; fill word for test mode
+	mov	ax,07h << 8 | ' '		; fill word for test mode
 
 .clear_screen:
 	repz	stosw			; clear screen with fill word
 
-	mov	dx,word [video_port]	; Get the port
+	mov	dx,word [video_port]		; Get the port
 	add	dl,4
 	pop	bx
-    cs	mov	al,byte [bx+MODES]	; Load data to set for mode
+    cs	mov	al,byte [bx+MODES]		; Load data to set for mode
 	out	dx,al			;  ...and send it
-	mov	byte [video_mode_reg],al ;  ...then save active data
+	mov	byte [video_mode_reg],al 	;  ...then save active data
 	inc	dx
 	mov	al,30h			; Assume not 640 x 200 b/w
 	cmp	bl,6			;  ...correct?
@@ -264,18 +247,18 @@ int_10_fn00:
 	mov	al,3Fh			; Palette for 640 x 200 b/w
 
 .set_palette:
-	mov	byte [video_palet_reg],al ;  ...save palette
+	mov	byte [video_palet_reg],al 	;  ...save palette
 	out	dx,al			;  ...send palette
 
 	mov	ax,ds
 	mov	es,ax
 	xor	ax,ax
-	mov	byte [video_page],al	;  ...active page=page 0
+	mov	byte [video_page],al		;  ...active page=page 0
 	mov	cx,9			; video_page_offt + video_cur_pos * 8
 	mov	di,video_page_offt
  	rep	stosw			; zero page offset and cursor position
 
-    cs	mov	al,byte [bx+columns]	; Get display width
+    cs	mov	al,byte [bx+columns]		; Get display width
 	mov	word [video_columns],ax	;  ...save it
 	and	bl,0FEh			; Clear the LSB to get an index
 					; to 16-bit word page_size table
@@ -283,7 +266,7 @@ int_10_fn00:
 					; size for mode 7. Probably not
 					; critical, as MDA has only one page
     cs	mov	ax,word [bx+page_size]	; Get video page size
-	mov	word [video_page_size],ax ;  ...save it
+	mov	word [video_page_size],ax 	;  ...save it
 	ret
 
 ;=========================================================================
@@ -296,8 +279,8 @@ int_10_fn00:
 ;	none
 ;-------------------------------------------------------------------------
 int_10_fn01:
-	mov	word [video_cur_shape],cx ; save cursor shape to BIOS data area
-	mov	ah,crtc_cur_start	; select CRTC cursor shape registers
+	mov	word [video_cur_shape],cx 	; save cursor shape to BIOS data area
+	mov	ah,crtc_cur_start		; select CRTC cursor shape registers
 	call	vid_crtc_writew		; write it to CRTC
 	ret
 
@@ -313,8 +296,8 @@ int_10_fn01:
 ;-------------------------------------------------------------------------
 int_10_fn02:
 	mov	bl,byte [bp+int_10_bh]	; BL = page number
-	cmp	byte [video_page],bl	; is it on current page?
-	jne	bios_set_cur_pos	; if not visible only update BIOS data
+	cmp	byte [video_page],bl		; is it on current page?
+	jne	bios_set_cur_pos		; if not visible only update BIOS data
 
 ;=========================================================================
 ; set_cur_pos - set CRTC cursor position, update BIOS cursor location
@@ -324,16 +307,16 @@ int_10_fn02:
 ;-------------------------------------------------------------------------
 set_cur_pos:
 	mov	ax,dx			; AX = cursor position
-	call	vid_position_to_offset			; AX - offset
+	call	vid_position_to_offset	; AX - offset
 	add	ax,word [video_page_offt]	;  + byte offset, regen reg.
 	shr	ax,1
 	mov	cx,ax
-	mov	ah,crtc_cur_pos_hi	; CRCT cursor location high register
+	mov	ah,crtc_cur_pos_hi		; CRCT cursor location high register
 	call	vid_crtc_writew		; send cursor position to CRTC
 bios_set_cur_pos:
 	mov	bh,0
 	shl	bl,1			; index to words table
-	mov	word [bx+video_cur_pos],dx ; save position to BIOS data area
+	mov	word [bx+video_cur_pos],dx 	; save position to BIOS data area
 	ret
 
 ;=========================================================================
@@ -351,9 +334,9 @@ int_10_fn03:
 	mov	bh,0
 	mov	bl,byte [bp+int_10_bh]	; BL = page number
 	shl	bl,1
-	mov	ax,word [bx+video_cur_pos] ; get current cursor position
+	mov	ax,word [bx+video_cur_pos] 	; get current cursor position
 	mov	word [bp+int_10_dx],ax	; return position in DX
-	mov	ax,word [video_cur_shape]  ; get cursor shape
+	mov	ax,word [video_cur_shape]  	; get cursor shape
 	mov	word [bp+int_10_cx],ax	; return cursor shape in CX
 	ret
 
@@ -377,13 +360,13 @@ int_10_fn04:
 	add	dl,6			; CRTC status register
 	in	al,dx			; read it
 	test	al,4			; test light pen switch bit
-	jz	.reset_pen		; reset pen and return if switch is off
+	jz	.reset_pen			; reset pen and return if switch is off
 	test	al,2			; test light pen tigger bit
-	jnz	.read_pen		; continue if triggered
+	jnz	.read_pen			; continue if triggered
 	ret				; not triggered - return
 
 .read_pen:
-	mov	dx,word [video_port]	; CRTC index register
+	mov	dx,word [video_port]		; CRTC index register
 	mov	al,crtc_pen_hi		; CRTC pen position high byte register
 	out	dx,al			; select it
 	inc	dx			; CRTC data register
@@ -396,14 +379,14 @@ int_10_fn04:
 	in	al,dx			; read low byte of pen position
 
 	mov	bh,0
-	mov	bl,byte [video_mode]	; get current video mode
-    cs	mov	bl,byte [bx+.correction] ; light pen correction factor
+	mov	bl,byte [video_mode]		; get current video mode
+    cs	mov	bl,byte [bx+.correction] 	; light pen correction factor
 	sub	ax,bx
 	jns	.1
 	xor	ax,ax			; set to zero if negative result
 
 .1:
-	call	vid_check_mode			; check video mode
+	call	vid_check_mode		; check video mode
 	jnc	.text			; calculate character position if text
 	mov	dl,40			; divide by 40
 	div	dl			; AL = row, AH = column (reminder)
@@ -417,7 +400,7 @@ int_10_fn04:
 	mov	dh,al
 	shr	dh,1
 	shr	dh,1			; DH = AL / 4 - character row
-	cmp	byte [video_mode],6	; check for 640x200 mode
+	cmp	byte [video_mode],6		; check for 640x200 mode
 	jnz	.exit
 	shl	bx,1			; adjust pixel column (double it)
 	shl	dl,1			; same or character column
@@ -441,13 +424,13 @@ int_10_fn04:
 	mov	byte [bp+int_10_ch],ch	;  ...raster line in user ch
 
 .reset_pen:
-	mov	dx,word [video_port]	; Get port of active CRTC card
+	mov	dx,word [video_port]		; Get port of active CRTC card
 	add	dl,7			; clear light pen strobe reg
 	out	dx,al			; reset it
 	ret
 
 .correction:
-	db	3, 3, 5, 5, 3, 3, 3, 4	; light pen correction
+	db	3, 3, 5, 5, 3, 3, 3, 4		; light pen correction
 
 ;=========================================================================
 ; int_10_fn05 - Select active display page
@@ -458,23 +441,23 @@ int_10_fn04:
 ;	none
 ;-------------------------------------------------------------------------
 int_10_fn05:
-	mov	byte [video_page],al	; update page number in BIOS data area
+	mov	byte [video_page],al		; update page number in BIOS data area
 	mov	bl,al			; also copy it to BL
 	mov	ah,0
 	mul	word [video_page_size]	; calculate page offset
-	mov	word [video_page_offt],ax ; save the offset
+	mov	word [video_page_offt],ax 	; save the offset
 	shr	ax,1			; calculate CRTC page start address
 	mov	cx,ax			; save a copy to CX
-	mov	ah,crtc_offset_hi	; CRTC start address high register
+	mov	ah,crtc_offset_hi		; CRTC start address high register
 	call	vid_crtc_writew		; write new offset to CRTC
 
 	mov	bh,0
 	shl	bx,1
-	mov	ax,word [bx+video_cur_pos] ; AX - cursor position for new page
-	call	vid_position_to_offset			; AX - offset relative to start of page
+	mov	ax,word [bx+video_cur_pos] 	; AX - cursor position for new page
+	call	vid_position_to_offset	; AX - offset relative to start of page
 	shr	ax,1
 	add	cx,ax			; add to the page offset
-	mov	ah,crtc_cur_pos_hi	; CRCT cursor location high register
+	mov	ah,crtc_cur_pos_hi		; CRCT cursor location high register
 	call	vid_crtc_writew		; send cursor position to CRTC
 	ret
 
@@ -520,7 +503,7 @@ int_10_fn07:
 
 	pop	dx			; DX = window's lower right corner
 	sub	dx,word [bp+int_10_cx]	; substract windows's upper left corner
-	add	dx,101h 		; add 1x1
+	add	dx,101h 			; add 1x1
 
 ; calculate offset between the source and the destination (AX)
 
@@ -569,7 +552,7 @@ int_10_fn07:
 	add	si,bx			; SI = next row to copy source address
 	add	di,bx			; DI = next row to copy destination
 	dec	dh			; decrement row counter
-	jnz	.text_scroll_loop	; jump if there is more rows to copy
+	jnz	.text_scroll_loop		; jump if there is more rows to copy
 
 .text_fill:
 	mov	dh,byte [bp+int_10_al]	; DH = number of rows to fill
@@ -583,7 +566,7 @@ int_10_fn07:
 .text_fill_loop:
 	mov	cl,dl			; CX = characters in row to fill
 	ror	si,1			; rotate snow workaround flag
-	jnc	.text_fill_no_retrace	; jump if LSB was zero - no wait
+	jnc	.text_fill_no_retrace		; jump if LSB was zero - no wait
 	call	.retrace_wait		; wait for vertical retrace
 
 .text_fill_no_retrace:
@@ -786,7 +769,7 @@ int_10_fn08:
 int_10_fn09:
 int_10_fn0A:
 	call	vid_check_mode
-	jc	.graphics		; jump if graphics mode
+	jc	.graphics			; jump if graphics mode
 	mov	bl,byte [bp+int_10_bh]	; BL = page number
 	mov	bh,0
 	push	bx
@@ -1112,7 +1095,7 @@ CGR_11:
 ;	none
 ;-------------------------------------------------------------------------
 int_10_fn0B:
-	mov	al,byte [video_palet_reg] ; AL = current palette register
+	mov	al,byte [video_palet_reg] 	; AL = current palette register
 	mov	ah,byte [bp+int_10_bl]	; AH = color / palette ID
 	cmp	byte [bp+int_10_bh],00h	; check function
 	jnz	.set_palette		; jump to set palette if BH != 0
@@ -1333,6 +1316,7 @@ vid_check_mode:
 
 ;=========================================================================
 ; vid_crtc_writew - Write a word to two consecutive CRTC registers
+; 将一个字写入两个连续的CRTC寄存器
 ; Input:
 ;	AH = register number
 ;	CX = word to write
@@ -1340,6 +1324,7 @@ vid_check_mode:
 ;	AX trashed
 ; Note:
 ;	Writes CH to register number AH, and CL to register number AH+1
+; 	将CH写入寄存器号AH，将CL写入寄存器号AH+1
 ;-------------------------------------------------------------------------
 vid_crtc_writew:
 	mov	al,ch
@@ -1351,6 +1336,7 @@ vid_crtc_writew:
 
 ;=========================================================================
 ; vid_crtc_writew - Write a word to two consecutive CRTC registers
+; 将一个字写入两个连续的CRTC寄存器
 ; Input:
 ;	AH = register number
 ;	AL = byte to write
@@ -1359,7 +1345,7 @@ vid_crtc_writew:
 ;-------------------------------------------------------------------------
 vid_crtc_writeb:
 	push	dx
-	mov	dx,word [video_port]	; DX = CRTC index port
+	mov	dx,word [video_port]		; DX = CRTC index port  (video_port=63H ;  [63H]=3B4h(mono), 3D4h(color)
 	xchg	al,ah			; AH = byte, AL = register number
 	out	dx,al			; write register number
 	xchg	al,ah			; AH = register numbet, AL = byte
@@ -1370,6 +1356,7 @@ vid_crtc_writeb:
 
 ;=========================================================================
 ; vid_pixel_address - calculate pixel address and mask
+; 计算像素地址和掩码
 ; Input:
 ;	CX - column
 ;	DX - row
@@ -1410,6 +1397,7 @@ vid_pixel_address:
 ;=========================================================================
 ; vid_current_offset - convert current cursor position to offset
 ;		       relative to page starting address
+; 将当前光标位置转换为相对于页面起始地址的偏移量
 ; Input:
 ;	BL = page
 ; Output:
@@ -1423,8 +1411,8 @@ vid_current_offset:
 ; fall through to vid_position_to_offset
 
 ;=========================================================================
-; vid_position_to_offset - convert position (row and column) to offset
-;			   relative to page starting address
+; vid_position_to_offset - convert position (row and column) to offset relative to page starting address
+; 将位置（行和列）转换为相对于页面起始地址的偏移量			   
 ; Input:
 ;	AH = row
 ;	AL = column
@@ -1444,6 +1432,7 @@ vid_position_to_offset:
 
 ;=========================================================================
 ; vid_gfx_pos_to_offset - convert position (row and column) to offset
+; 将位置（行和列）转换为偏移
 ; Input:
 ;	AH = row
 ;	AL = column
